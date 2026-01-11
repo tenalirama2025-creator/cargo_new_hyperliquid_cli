@@ -31,6 +31,7 @@ DeFi Integrations: Direct hooks into Morpho lending positions and vault equities
 Security First: Implements delegated wallet logic, allowing the CLI to sign trades without exposing the main account's master private key.
 
 🛡️ AI Safety & Control Implications
+
 This project demonstrates technical competency in AI Control and Security, specifically:
 
 Agent Sandbox Monitoring: The CLI serves as a "human-in-the-loop" monitoring tool. It allows researchers to audit and override AI agent actions in real-time within a DeFi "model organism" environment.
@@ -38,6 +39,10 @@ Agent Sandbox Monitoring: The CLI serves as a "human-in-the-loop" monitoring too
 Robust Tooling for Red Teaming: Providing a scriptable, reliable interface to stress-test how AI agents handle adversarial market conditions (e.g., sudden volatility or oracle manipulation).
 
 Formal Verification Foundations: By using Rust, the codebase is a step toward "verifiable safety" in the tools used to manage and deploy autonomous frontier models.
+
+🛡️ AI Safety & Monitoring
+
+This repository now includes an Agent Monitor (agent_monitor.py) written in Python. This script demonstrates how the high-performance Rust CLI can be wrapped in a Scalable Oversight framework. By polling the Rust binary, the monitor can act as a "trip-wire," detecting anomalous or high-risk trading behaviors in autonomous agents and triggering safety interventions.
 
 💻 Quick Start
 Installation
