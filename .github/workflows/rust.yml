@@ -1,4 +1,4 @@
-name: CI Quality Gate
+name: DeFi Security & Quality Gate
 
 on:
   push:
@@ -10,28 +10,26 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-    name: Build and Security Audit
+  verify:
+    name: Financial Integrity & Security Check
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Rust
+    - name: Set up Rust stable
       uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy, rustfmt
 
-    - name: Check Formatting
+    - name: Enforce Style Standards (fmt)
       run: cargo fmt --all -- --check
-      # This ensures the code adheres to professional standards before even building.
 
-    - name: Lint with Clippy
+    - name: Static Analysis & Security Audit (clippy)
       run: cargo clippy -- -D warnings
-      # This catches common architectural errors and security smells in Rust code.
 
-    - name: Build
-      run: cargo build --verbose
+    - name: Compile (Release Profile)
+      run: cargo build --release --verbose
 
-    - name: Run tests
+    - name: Execute Test Suite
       run: cargo test --verbose
