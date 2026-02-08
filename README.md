@@ -13,50 +13,50 @@ Tech Stack Rationale
 |**Crate Ecosystem**|Serde / Anyhow|Robust serialization for JSON-RPC and centralized error handling to ensure system uptime.|
 |**Infrastructure**|Docker|Ensures consistent execution environments across different developer and production nodes.|
 
-🚀 Research & Engineering Motivation
+🚀 **Research & Engineering Motivation**
 Autonomous AI agents are increasingly tasked with operating in high-stakes financial environments. This project was developed to explore:
 
-Low-Latency Agent Control: How efficiently can a command-line interface bridge the gap between an agent's decision and on-chain execution?
+**Low-Latency Agent Control:** How efficiently can a command-line interface bridge the gap between an agent's decision and on-chain execution?
 
-Rust for Safety-Critical Systems: Leveraging Rust's ownership model to eliminate common memory vulnerabilities in financial tooling.
+**Rust for Safety-Critical Systems:** Leveraging Rust's ownership model to eliminate common memory vulnerabilities in financial tooling.
 
-Deterministic Execution: Ensuring every CLI command maps precisely to a verifiable on-chain action.
+**Deterministic Execution:** Ensuring every CLI command maps precisely to a verifiable on-chain action.
 
-🛠️ Technical Stack
-Language: Rust (Stable)
+🛠️ **Technical Stack**
+**Language:** Rust (Stable)
 
-Async Runtime: tokio for non-blocking I/O and high-concurrency API calls.
+**Async Runtime:** tokio for non-blocking I/O and high-concurrency API calls.
 
-SDK: Built on top of hypersdk for EIP-712 type-safe signing and WebSocket support.
+**SDK:** Built on top of hypersdk for EIP-712 type-safe signing and WebSocket support.
 
-CLI Framework: clap (Command Line Argument Parser) for intuitive, nested subcommands.
+**CLI Framework:** clap (Command Line Argument Parser) for intuitive, nested subcommands.
 
-Formatting: tabwriter for clean, human-readable terminal outputs.
+**Formatting:** tabwriter for clean, human-readable terminal outputs.
 
-✨ Key Features
-Market Intelligence: Query perpetual and spot market metadata, leverage limits, and price tick sizes instantly.
+✨ **Key Features**
+**Market Intelligence:** Query perpetual and spot market metadata, leverage limits, and price tick sizes instantly.
 
-Portfolio Monitoring: Real-time tracking of user balances across Spot, Perps, and HyperEVM balances.
+**Portfolio Monitoring:** Real-time tracking of user balances across Spot, Perps, and HyperEVM balances.
 
-DeFi Integrations: Direct hooks into Morpho lending positions and vault equities.
+**DeFi Integrations:** Direct hooks into Morpho lending positions and vault equities.
 
-Security First: Implements delegated wallet logic, allowing the CLI to sign trades without exposing the main account's master private key.
+**Security First:** Implements delegated wallet logic, allowing the CLI to sign trades without exposing the main account's master private key.
 
-🛡️ AI Safety & Control Implications
+🛡️ **AI Safety & Control Implications**
 
 This project demonstrates technical competency in AI Control and Security, specifically:
 
-Agent Sandbox Monitoring: The CLI serves as a "human-in-the-loop" monitoring tool. It allows researchers to audit and override AI agent actions in real-time within a DeFi "model organism" environment.
+**Agent Sandbox Monitoring:** The CLI serves as a "human-in-the-loop" monitoring tool. It allows researchers to audit and override AI agent actions in real-time within a DeFi "model organism" environment.
 
-Robust Tooling for Red Teaming: Providing a scriptable, reliable interface to stress-test how AI agents handle adversarial market conditions (e.g., sudden volatility or oracle manipulation).
+**Robust Tooling for Red Teaming:** Providing a scriptable, reliable interface to stress-test how AI agents handle adversarial market conditions (e.g., sudden volatility or oracle manipulation).
 
-Formal Verification Foundations: By using Rust, the codebase is a step toward "verifiable safety" in the tools used to manage and deploy autonomous frontier models.
+**Formal Verification Foundations:** By using Rust, the codebase is a step toward "verifiable safety" in the tools used to manage and deploy autonomous frontier models.
 
-🛡️ AI Safety & Monitoring
+🛡️ **AI Safety & Monitoring**
 
 This repository now includes an Agent Monitor (agent_monitor.py) written in Python. This script demonstrates how the high-performance Rust CLI can be wrapped in a Scalable Oversight framework. By polling the Rust binary, the monitor can act as a "trip-wire," detecting anomalous or high-risk trading behaviors in autonomous agents and triggering safety interventions.
 
-💻 Quick Start
+💻 **Quick Start**
 Installation
 Bash
 
