@@ -1,9 +1,9 @@
 Hyperliquid CLI: High-Performance DeFi Interface in Rust
 A lightweight, high-velocity command-line interface (CLI) for interacting with the Hyperliquid decentralized exchange. Built in Rust for maximum memory safety and execution speed, this tool provides programmatic access to HyperCore (trading) and HyperEVM (smart contracts) without the overhead of a GUI.
 
-Strategic Design Decisions Memory Safety over Development Speed: I opted for Rust over Python or Go to eliminate entire classes of memory-related vulnerabilities (buffer overflows, use-after-free) at compile time. In a decentralized finance context, this reduces the attack surface for financial exploits.
+**Strategic Design Decisions Memory Safety over Development Speed:** I opted for **Rust** over Python or Go to eliminate entire classes of memory-related vulnerabilities (buffer overflows, use-after-free) at compile time. In a decentralized finance context, this reduces the attack surface for financial exploits.
 
-Asynchronous Concurrency: Utilized the Tokio runtime to handle high-throughput I/O. This ensures the CLI remains responsive during periods of high market volatility, where sub-second execution is a competitive requirement.
+**Asynchronous Concurrency:** Utilized the **Tokio** runtime to handle high-throughput I/O. This ensures the CLI remains responsive during periods of high market volatility, where sub-second execution is a competitive requirement.
 
 Tech Stack Rationale
 
