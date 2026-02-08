@@ -1,3 +1,4 @@
+![CI Status](https://github.com/tenalirama2025-creator/cargo_new_hyperliquid_cli/actions/workflows/rust.yml/badge.svg)
 Hyperliquid CLI: High-Performance DeFi Interface in Rust
 A lightweight, high-velocity command-line interface (CLI) for interacting with the Hyperliquid decentralized exchange. Built in Rust for maximum memory safety and execution speed, this tool provides programmatic access to HyperCore (trading) and HyperEVM (smart contracts) without the overhead of a GUI.
 
