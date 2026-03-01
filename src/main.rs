@@ -1,145 +1,190 @@
-use tokio::net::TcpStream;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
-use url::Url;
-use futures::{stream::StreamExt, SinkExt};
+use clap::{Parser, Subcommand};
+use futures::{SinkExt, StreamExt};
 use serde_json::json;
+use tokio_tungstenite::connect_async;
+use url::Url;
 
-// --- STEP 1: Define Data Structures (Simplified) ---
-#[derive(Debug, serde::Deserialize)]
+/* #[derive(Debug, serde::Deserialize)]
 struct OrderBookLevel {
-    px: String, // Price as a string
-    sz: String, // Size as a string
+    px: String,
+    sz: String,
+} */
+/// Hyperliquid-rs: High-Performance Perpetual DEX CLI
+#[derive(Parser)]
+#[command(name = "hypecli", version = "0.1.0", author = "Venkateshwar Rao Nagala")]
+#[command(about = "High-performance Rust CLI for Hyperliquid DEX", long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
 }
 
-#[derive(Debug, serde::Deserialize)]
-struct OrderBookData {
-    coin: String,
-    asks: Vec<OrderBookLevel>,
-    bids: Vec<OrderBookLevel>,
-    // Add other fields as needed (e.g., sequence, time)
+#[derive(Subcommand)]
+enum Commands {
+    /// List all active perpetual markets with leverage limits
+    Perps,
+    /// Stream real-time order book via WebSocket
+    Stream {
+        /// Asset to stream (e.g. ETH, BTC)
+        #[arg(short, long, default_value = "ETH")]
+        coin: String,
+    },
+    /// Check spot balances for a wallet address
+    SpotBalances {
+        /// Wallet address to query
+        #[arg(short, long)]
+        user: String,
+    },
+    /// Monitor Morpho lending position
+    MorphoPosition {
+        /// Market ID to monitor
+        #[arg(short, long)]
+        market: String,
+    },
 }
 
-// --- STEP 2: Market Data Fetching via WebSocket ---
-async fn connect_market_data(url: &str) -> Result<(), Box<dyn std::error::Error>> {
-    println!("Connecting to WebSocket: {}", url);
-    
-    // Connect to the WebSocket endpoint
-    let (ws_stream, _) = connect_async(Url::parse(url)?).await?;
-    println!("WebSocket handshake successful.");
-    
-    // Split the stream into a sender and receiver
-    let (mut write, mut read) = ws_stream.split();
-    
-    // Subscribe message (adapt this JSON payload for Hyperliquid's specific format)
-    let subscribe_msg = json!({
-        "method": "subscribe",
-        "params": {
-            "channel": "l2Book",
-            "coin": "ETH",
-        },
-        "id": 1
-    }).to_string();
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = Cli::parse();
 
-    // Send the subscription message
-    write.send(tokio_tungstenite::tungstenite::Message::Text(subscribe_msg)).await?;
-    
-    println!("Subscription sent. Reading messages...");
-
-    // Loop to read incoming messages
-    while let Some(message) = read.next().await {
-        match message {
-            Ok(tokio_tungstenite::tungstenite::Message::Text(text)) => {
-                // Try to parse the message as an OrderBookData update
-                if let Ok(data) = serde_json::from_str::<serde_json::Value>(&text) {
-                    // Check if it's the specific data structure you want
-                    if let Some(data_payload) = data.get("data").and_then(|d| d.get("data")) {
-                        if let Ok(order_book) = serde_json::from_value::<OrderBookData>(data_payload.clone()) {
-                            println!("\nMarket Data Update for {}:", order_book.coin);
-                            
-                            // --- STEP 3: Simple Order Calculation/Pre-processing ---
-                            if let (Some(best_bid), Some(best_ask)) = (order_book.bids.first(), order_book.asks.first()) {
-                                
-                                // Example Pre-processing/Calculation: Mid-Price and Simple Margin Calc
-                                let bid_px: f64 = best_bid.px.parse()?;
-                                let ask_px: f64 = best_ask.px.parse()?;
-                                let mid_price = (bid_px + ask_px) / 2.0;
-
-                                // Assuming 10x leverage, rough margin calculation for 1 ETH position
-                                let position_size = 1.0; 
-                                let leverage = 10.0;
-                                let margin_req = (mid_price * position_size) / leverage;
-
-                                println!("  Mid Price: {:.2}", mid_price);
-                                println!("  Best Bid: {} @ {}", best_bid.sz, best_bid.px);
-                                println!("  Best Ask: {} @ {}", best_ask.sz, best_ask.px);
-                                println!("  **Calculated Margin for {}x pos: {:.4} USD**", position_size, margin_req);
-                            }
-                        } else {
-                            // Print unparsed messages for debugging (like heartbeats, initial confirmations)
-                            // println!("Raw Message: {}", text); 
-                        }
-                    }
-                }
-            },
-            Ok(tokio_tungstenite::tungstenite::Message::Close(_)) => {
-                println!("WebSocket connection closed.");
-                break;
-            }
-            Err(e) => {
-                eprintln!("Error receiving message: {}", e);
-                break;
-            }
-            _ => {} // Ignore Ping/Pong/Binary messages
-        }
+    match cli.command {
+        Commands::Perps => cmd_perps().await?,
+        Commands::Stream { coin } => cmd_stream(&coin).await?,
+        Commands::SpotBalances { user } => cmd_spot_balances(&user).await?,
+        Commands::MorphoPosition { market } => cmd_morpho_position(&market).await?,
     }
 
     Ok(())
 }
 
-// --- STEP 4: Placeholder for REST API / Simple Action ---
-// This would use `reqwest` for wallet balance fetching or placing an order
-async fn execute_simple_action() -> Result<(), reqwest::Error> {
-    println!("\nExecuting Simple REST Action (Placeholder)...");
-    
-    // Placeholder for Hyperliquid API base URL (adapt as necessary)
-    let url = "https://api.hyperliquid.xyz/info"; 
-    
-    // Example: Fetching some general information
-    let response = reqwest::Client::new()
-        .post(url)
-        .json(&json!({ "type": "metaAndAssetCtxs" }))
+async fn cmd_perps() -> Result<(), Box<dyn std::error::Error>> {
+    println!("📊 Fetching Hyperliquid Perpetual Markets...\n");
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .post("https://api.hyperliquid.xyz/info")
+        .json(&json!({ "type": "meta" }))
         .send()
         .await?
         .json::<serde_json::Value>()
         .await?;
 
-    println!("Fetched REST Info (Partial):\n{}", serde_json::to_string_pretty(&response.get(0).unwrap_or(&serde_json::Value::Null)).unwrap());
-    
-    // In a real scenario, you'd fetch balances, sign a transaction, and submit it here.
+    let universe = resp["universe"]
+        .as_array()
+        .ok_or("No universe field")?;
+
+    println!("{:<6} {:<12} {:<15}", "IDX", "ASSET", "MAX LEVERAGE");
+    println!("{}", "-".repeat(35));
+
+    for (i, asset) in universe.iter().enumerate().take(20) {
+        let name = asset["name"].as_str().unwrap_or("?");
+        let leverage = asset["maxLeverage"].as_u64().unwrap_or(0);
+        println!("{:<6} {:<12} {}x", i, name, leverage);
+    }
+
+    println!("\n✅ Showing top 20 of {} markets", universe.len());
+    Ok(())
+}
+
+async fn cmd_stream(coin: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("📡 Streaming {} order book (press Ctrl+C to stop)...\n", coin);
+
+    let (ws_stream, _) = connect_async(Url::parse("wss://api.hyperliquid.xyz/ws")?).await?;
+    println!("✅ WebSocket connected.");
+
+    let (mut write, mut read) = ws_stream.split();
+
+    let sub = json!({
+        "method": "subscribe",
+        "subscription": { "type": "l2Book", "coin": coin }
+    })
+    .to_string();
+
+    write
+        .send(tokio_tungstenite::tungstenite::Message::Text(sub))
+        .await?;
+
+    let mut count = 0;
+    while let Some(msg) = read.next().await {
+        match msg {
+            Ok(tokio_tungstenite::tungstenite::Message::Text(text)) => {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
+                    if val["channel"] == "l2Book" {
+                        if let Some(levels) = val["data"]["levels"].as_array() {
+                            if levels.len() >= 2 {
+                                let bids = &levels[0];
+                                let asks = &levels[1];
+                                if let (Some(best_bid), Some(best_ask)) =
+                                    (bids.as_array().and_then(|b| b.first()),
+                                     asks.as_array().and_then(|a| a.first()))
+                                {
+                                    let bid: f64 = best_bid["px"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
+                                    let ask: f64 = best_ask["px"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
+                                    let mid = (bid + ask) / 2.0;
+                                    let spread = ask - bid;
+                                    println!(
+                                        "#{:<4} {} | Bid: {:.2}  Ask: {:.2}  Mid: {:.2}  Spread: {:.4}",
+                                        count, coin, bid, ask, mid, spread
+                                    );
+                                    count += 1;
+                                    if count >= 10 {
+                                        println!("\n✅ 10 updates received. Exiting stream.");
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Ok(tokio_tungstenite::tungstenite::Message::Close(_)) => {
+                println!("WebSocket closed.");
+                break;
+            }
+            Err(e) => {
+                eprintln!("Error: {}", e);
+                break;
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+async fn cmd_spot_balances(user: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("💰 Fetching spot balances for {}...\n", user);
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .post("https://api.hyperliquid.xyz/info")
+        .json(&json!({ "type": "spotClearinghouseState", "user": user }))
+        .send()
+        .await?
+        .json::<serde_json::Value>()
+        .await?;
+
+    let balances = resp["balances"].as_array();
+    match balances {
+        Some(b) if !b.is_empty() => {
+            println!("{:<10} {:<20} {:<20}", "COIN", "TOTAL", "HOLD");
+            println!("{}", "-".repeat(50));
+            for bal in b {
+                let coin = bal["coin"].as_str().unwrap_or("?");
+                let total = bal["total"].as_str().unwrap_or("0");
+                let hold = bal["hold"].as_str().unwrap_or("0");
+                println!("{:<10} {:<20} {:<20}", coin, total, hold);
+            }
+        }
+        _ => println!("⚠️  No spot balances found for this address."),
+    }
 
     Ok(())
 }
 
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let ws_url = "wss://api.hyperliquid.xyz/ws"; // Check official docs for correct WS URL
-
-    // Run both tasks concurrently
-    tokio::select! {
-        // Run the WebSocket connection for real-time data
-        res = connect_market_data(ws_url) => {
-            if let Err(e) = res {
-                eprintln!("WebSocket Error: {}", e);
-            }
-        }
-        // Run the REST action for an account action
-        res = execute_simple_action() => {
-             if let Err(e) = res {
-                eprintln!("REST Error: {}", e);
-            }
-        }
-    }
-    
+async fn cmd_morpho_position(market: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("🏦 Morpho Market Monitor: {}\n", market);
+    println!("ℹ️  Morpho integration requires on-chain EVM query.");
+    println!("    Market ID: {}", market);
+    println!("    Chain:     HyperEVM (Chain ID: 999)");
+    println!("    Status:    Placeholder — full EVM integration in v0.2.0");
     Ok(())
 }
