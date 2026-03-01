@@ -11,7 +11,11 @@ struct OrderBookLevel {
 } */
 /// Hyperliquid-rs: High-Performance Perpetual DEX CLI
 #[derive(Parser)]
-#[command(name = "hypecli", version = "0.1.0", author = "Venkateshwar Rao Nagala")]
+#[command(
+    name = "hypecli",
+    version = "0.1.0",
+    author = "Venkateshwar Rao Nagala"
+)]
 #[command(about = "High-performance Rust CLI for Hyperliquid DEX", long_about = None)]
 struct Cli {
     #[command(subcommand)]
@@ -68,9 +72,7 @@ async fn cmd_perps() -> Result<(), Box<dyn std::error::Error>> {
         .json::<serde_json::Value>()
         .await?;
 
-    let universe = resp["universe"]
-        .as_array()
-        .ok_or("No universe field")?;
+    let universe = resp["universe"].as_array().ok_or("No universe field")?;
 
     println!("{:<6} {:<12} {:<15}", "IDX", "ASSET", "MAX LEVERAGE");
     println!("{}", "-".repeat(35));
@@ -86,7 +88,10 @@ async fn cmd_perps() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn cmd_stream(coin: &str) -> Result<(), Box<dyn std::error::Error>> {
-    println!("📡 Streaming {} order book (press Ctrl+C to stop)...\n", coin);
+    println!(
+        "📡 Streaming {} order book (press Ctrl+C to stop)...\n",
+        coin
+    );
 
     let (ws_stream, _) = connect_async(Url::parse("wss://api.hyperliquid.xyz/ws")?).await?;
     println!("✅ WebSocket connected.");
@@ -113,12 +118,20 @@ async fn cmd_stream(coin: &str) -> Result<(), Box<dyn std::error::Error>> {
                             if levels.len() >= 2 {
                                 let bids = &levels[0];
                                 let asks = &levels[1];
-                                if let (Some(best_bid), Some(best_ask)) =
-                                    (bids.as_array().and_then(|b| b.first()),
-                                     asks.as_array().and_then(|a| a.first()))
-                                {
-                                    let bid: f64 = best_bid["px"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
-                                    let ask: f64 = best_ask["px"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
+                                if let (Some(best_bid), Some(best_ask)) = (
+                                    bids.as_array().and_then(|b| b.first()),
+                                    asks.as_array().and_then(|a| a.first()),
+                                ) {
+                                    let bid: f64 = best_bid["px"]
+                                        .as_str()
+                                        .unwrap_or("0")
+                                        .parse()
+                                        .unwrap_or(0.0);
+                                    let ask: f64 = best_ask["px"]
+                                        .as_str()
+                                        .unwrap_or("0")
+                                        .parse()
+                                        .unwrap_or(0.0);
                                     let mid = (bid + ask) / 2.0;
                                     let spread = ask - bid;
                                     println!(
