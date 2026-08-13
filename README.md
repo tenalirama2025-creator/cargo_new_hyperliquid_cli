@@ -62,8 +62,8 @@ Installation
 Bash
 
 # Clone the repository
-git clone https://github.com/tenalirama2025-creator/cargo_new_hyperliquid_cli
-cd cargo_new_hyperliquid_cli
+git clone https://github.com/tenalirama2005/hyperliquid-cli
+cd hyperliquid-cli
 
 # Build for release
 cargo build --release
